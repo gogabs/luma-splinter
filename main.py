@@ -374,6 +374,7 @@ def passo(dt):
 
 @game.on_quit
 def saindo():
+    game.hush()          # corta a ajuda do menu ou a leitura, para não vazar para o Luma
     salvar()
     manter_acordado(False)
 
