@@ -243,7 +243,8 @@ def fim_do_livro():
     game.say("Fim do livro. Aperte B para abrir o menu.", queue=True)
 
 
-def mover(nova, aviso_borda):
+def mover(nova, aviso_borda, ate="frase"):
+    """Anda para nova. Lendo sem parar, segue lendo dali; parado (ou em trecho), lê só a frase ou o parágrafo (ate)."""
     leitura = ctx["leitura"]
     if nova is None:
         sons["borda"].play()
@@ -254,9 +255,7 @@ def mover(nova, aviso_borda):
     ctx["fim"] = False
     estado._livro(ctx["livro"].ident).pop("terminado", None)
     mudou_capitulo = nova[0] != leitura.pos[0]
-    leitura.ir_para(nova)
-    if not leitura.tocando:
-        game.say(leitura.texto_atual())
+    leitura.ir_para(nova, tocar=True, ate=None if leitura.continua else ate)
     if mudou_capitulo:
         sons["capitulo"].play()
     salvar()
@@ -333,17 +332,17 @@ def botao(b, st, ms):
     if a11y.is_confirm(b):
         alternar()
     elif b == "right":
-        mover(livro.proxima_frase(pos), "Fim do livro.")
+        mover(livro.proxima_frase(pos), "Fim do livro.", "frase")
     elif b == "left":
-        mover(livro.frase_anterior(pos), "Início do livro.")
+        mover(livro.frase_anterior(pos), "Início do livro.", "frase")
     elif b == "down":
-        mover(livro.proximo_paragrafo(pos), "Fim do livro.")
+        mover(livro.proximo_paragrafo(pos), "Fim do livro.", "paragrafo")
     elif b == "up":
-        mover(livro.paragrafo_anterior(pos), "Início do livro.")
+        mover(livro.paragrafo_anterior(pos), "Início do livro.", "paragrafo")
     elif b == "r1":
-        mover(livro.proximo_capitulo(pos), "Este é o último capítulo.")
+        mover(livro.proximo_capitulo(pos), "Este é o último capítulo.", "paragrafo")
     elif b == "l1":
-        mover(livro.capitulo_anterior(pos), "Este é o primeiro capítulo.")
+        mover(livro.capitulo_anterior(pos), "Este é o primeiro capítulo.", "paragrafo")
     elif b == "r2":
         mudar_velocidade(1)
     elif b == "l2":
@@ -351,7 +350,7 @@ def botao(b, st, ms):
     elif b == "x":
         marcar()
     elif b == "y":
-        mover(pos, "")
+        mover(pos, "", "frase")
     elif b == "select":
         onde_estou()
     elif b == "start":

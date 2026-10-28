@@ -167,6 +167,31 @@ class LeituraTest(unittest.TestCase):
         self.l.tocar()                       # retoma do começo da mesma frase
         self.assertEqual(self.fala.fila[0][0], "Um. a1")
 
+    def test_paragrafo_parado_le_todas_as_frases_uma_de_cada_vez_e_para(self):
+        self.l.ir_para((0, 0, 0), tocar=True, ate="paragrafo")
+        self.assertEqual(len(self.fala.fila), 1)      # nunca mais de uma no Core
+        ditos = []
+        while self.fala.fila:
+            ditos.append(self.fala.terminar_uma())
+        self.assertEqual(ditos, ["Um. a1", "a2"])      # não passa para o parágrafo seguinte
+        self.assertFalse(self.l.tocando)
+        self.assertEqual(self.l.pos, (0, 0, 0))        # fica no começo do parágrafo
+        self.assertEqual(self.fim, [])
+
+    def test_navegar_limpa_a_fila_do_parágrafo_anterior(self):
+        self.l.ir_para((0, 0, 0), tocar=True, ate="paragrafo")
+        velho = self.fala.fila[0][1]
+        self.l.interromper()
+        self.l.ir_para((0, 1, 0), tocar=True, ate="paragrafo")
+        velho(True)                                    # callback da fila antiga: ignorado
+        self.assertEqual([t for t, _ in self.fala.fila], ["b1"])
+
+    def test_frase_parado_le_so_uma(self):
+        self.l.ir_para((0, 0, 1), tocar=True, ate="frase")
+        self.assertEqual(self.fala.terminar_uma(), "a2")
+        self.assertEqual(self.fala.fila, [])
+        self.assertEqual(self.l.pos, (0, 0, 1))
+
     def test_pular_parado_nao_fala(self):
         self.l.ir_para((1, 0, 0))
         self.assertEqual(self.fala.fila, [])

@@ -13,8 +13,8 @@ Lendo:
 | Botão | Ação |
 |---|---|
 | B | pausar / continuar |
-| esquerda / direita | frase anterior / próxima |
-| cima / baixo | parágrafo anterior / próximo (cima no meio do parágrafo volta ao começo dele) |
+| esquerda / direita | frase anterior / próxima (parado, lê só essa frase) |
+| cima / baixo | parágrafo anterior / próximo (cima no meio do parágrafo volta ao começo dele). Parado, lê o parágrafo inteiro, frase por frase, e para |
 | L1 / R1 | capítulo anterior / próximo |
 | L2 / R2 | fala mais devagar / mais rápida (6 passos, guardado) |
 | X | marcador no ponto atual |

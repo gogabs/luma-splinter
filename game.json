@@ -2,7 +2,7 @@
   "id": "splinter",
   "name": "Splinter",
   "description": "Lê livros EPUB em voz alta, com capítulos, marcadores e retomada de onde parou.",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "contract": 1,
   "runtime": "python3",
   "exec": "main.py",
