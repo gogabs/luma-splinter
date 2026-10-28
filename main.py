@@ -46,6 +46,13 @@ _speech._user_voice = _voz_com_velocidade
 ctx = {"livros": [], "livro": None, "leitura": None, "tempo": 0.0, "menu": None, "fim": False}
 
 
+def manter_acordado(ligado):
+    """Evita a suspensão durante a leitura. Mage Core antigo não tem keep_awake: segue sem."""
+    fn = getattr(game, "keep_awake", None)
+    if fn is not None:
+        fn(ligado)
+
+
 # --- biblioteca ----------------------------------------------------------------
 def achar_livros():
     vistos, achados = set(), []
@@ -153,7 +160,7 @@ def voltar_aos_livros():
     salvar()
     if ctx["leitura"]:
         ctx["leitura"].pausar()
-    game.keep_awake(False)
+    manter_acordado(False)
     ctx.update(livro=None, leitura=None)
     abrir_biblioteca()
 
@@ -215,7 +222,7 @@ def comecar_a_ler():
     ctx["tempo"] = 0.0
     sons["retoma"].play()
     ctx["leitura"].tocar()
-    game.keep_awake(True)
+    manter_acordado(True)
 
 
 def salvar():
@@ -230,7 +237,7 @@ def fim_do_livro():
     ctx["fim"] = True
     estado._livro(ctx["livro"].ident)["terminado"] = True
     salvar()
-    game.keep_awake(False)
+    manter_acordado(False)
     sons["capitulo"].play()
     game.say("Fim do livro. Aperte B para abrir o menu.", queue=True)
 
@@ -258,13 +265,13 @@ def alternar():
         abrir_menu_do_livro()
     elif leitura.tocando:
         leitura.pausar()
-        game.keep_awake(False)
+        manter_acordado(False)
         sons["pausa"].play()
         salvar()
     else:
         sons["retoma"].play()
         leitura.tocar()
-        game.keep_awake(True)
+        manter_acordado(True)
 
 
 def marcar():
@@ -341,7 +348,7 @@ def botao(b, st, ms):
         onde_estou()
     elif b == "start":
         leitura.pausar()
-        game.keep_awake(False)
+        manter_acordado(False)
         salvar()
         abrir_menu_do_livro()
     elif a11y.is_back(b):
@@ -361,7 +368,7 @@ def passo(dt):
 @game.on_quit
 def saindo():
     salvar()
-    game.keep_awake(False)
+    manter_acordado(False)
 
 
 game.run()
