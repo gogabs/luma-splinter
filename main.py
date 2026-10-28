@@ -21,6 +21,7 @@ PASTAS = [os.environ.get("A11Y_LIVROS"), "/roms/a11y/livros", "/roms/ebooks",
           os.path.expanduser("~/livros"), os.path.join(HERE, "livros")]
 PASSO_VELOCIDADE = 10      # unidades do SSIP (-100..100) por aperto
 LIMITE_VELOCIDADE = 6      # quantos passos para cada lado
+BOTOES_DA_LEITURA = {"left", "right", "up", "down", "l1", "r1", "l2", "r2", "x", "y", "select", "start", "a"}
 SALVAR_A_CADA = 10.0       # segundos, lendo
 
 game = a11y.Game(repeat=False)
@@ -247,6 +248,8 @@ def mover(nova, aviso_borda):
     if nova is None:
         sons["borda"].play()
         game.say(aviso_borda)
+        if leitura.tocando:
+            leitura.tocar(depois_do_que_esta_falando=True)
         return
     ctx["fim"] = False
     estado._livro(ctx["livro"].ident).pop("terminado", None)
@@ -290,6 +293,8 @@ def mudar_velocidade(delta):
     if novo == estado.velocidade:
         sons["borda"].play()
         game.say("Já está na %s velocidade." % ("maior" if delta > 0 else "menor"))
+        if leitura.tocando:
+            leitura.tocar(depois_do_que_esta_falando=True)
         return
     estado.velocidade = novo
     game.say("Velocidade normal." if novo == 0 else
@@ -321,6 +326,9 @@ def botao(b, st, ms):
         if a11y.is_back(b):
             game.quit()
         return
+    print("[splinter] botão %s, lendo=%s" % (b, leitura.tocando), file=sys.stderr)
+    if leitura.tocando and b in BOTOES_DA_LEITURA:
+        leitura.interromper()            # qualquer entrada corta a frase; cada ação decide como seguir
     pos = leitura.pos
     if a11y.is_confirm(b):
         alternar()

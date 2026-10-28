@@ -45,7 +45,7 @@ class TextoTest(unittest.TestCase):
 
     def test_frase_longa_e_dividida(self):
         s = sentences(", ".join(["palavra"] * 80))
-        self.assertTrue(all(len(x) <= 261 for x in s))
+        self.assertTrue(all(len(x) <= 151 for x in s))
         self.assertGreater(len(s), 1)
 
     def test_extrai_paragrafos_e_ignora_script(self):
@@ -155,6 +155,17 @@ class LeituraTest(unittest.TestCase):
         velho(True)
         self.assertEqual(self.l.pos, (0, 1, 0))
         self.assertEqual(self.fala.fila[0][0], "b1")
+
+    def test_interromper_corta_e_ignora_callbacks_velhos(self):
+        self.l.tocar()
+        velho = self.fala.fila[0][1]
+        self.l.interromper()
+        self.assertEqual(self.fala.cortes, 1)
+        velho(True)
+        self.assertEqual(self.l.pos, (0, 0, 0))
+        self.fala.fila = []
+        self.l.tocar()                       # retoma do começo da mesma frase
+        self.assertEqual(self.fala.fila[0][0], "Um. a1")
 
     def test_pular_parado_nao_fala(self):
         self.l.ir_para((1, 0, 0))

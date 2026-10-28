@@ -74,6 +74,12 @@ class Leitura:
         self._enfileirar(self.pos, not depois_do_que_esta_falando)
         self._encher()
 
+    def interromper(self):
+        """Corta a fala na hora, sem mexer na posição: quem chama retoma da frase em curso."""
+        self._geracao += 1
+        self._na_fila = 0
+        self.hush()
+
     def pausar(self):
         self._geracao += 1
         self.tocando = False

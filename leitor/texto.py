@@ -74,15 +74,15 @@ ABBREV = {"sr", "sra", "srta", "dr", "dra", "prof", "profa", "av", "etc", "ex", 
           "exmo", "ltda", "cia", "fig", "obs", "tel", "apt", "ed", "i.e", "e.g", "vs", "no"}
 _END = re.compile(r"[.!?…]+[\"”’')»\]]*\s+")
 _OPENER = re.compile(r"[A-ZÀ-ÖØ-Þ0-9\"“‘'«(\[—–¿¡-]")
-MAX = 260
+MAX = 150
 
 
 def _split_long(s):
     out = []
     while len(s) > MAX:
-        cut = max(s.rfind(sep, 100, MAX) for sep in (";", ",", ":"))
+        cut = max(s.rfind(sep, 50, MAX) for sep in (";", ",", ":"))
         if cut < 0:
-            cut = s.rfind(" ", 100, MAX)
+            cut = s.rfind(" ", 50, MAX)
         if cut < 0:
             cut = MAX
         out.append(s[:cut + 1].strip())
