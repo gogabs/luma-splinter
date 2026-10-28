@@ -1,13 +1,13 @@
 """Leitura contínua frase a frase, sem depender do jogo: recebe a função de fala.
 
-say(texto, queue=False, on_done=None) é o Game.say. Mantém sempre algumas
-frases na fila da fala para não haver pausa entre elas, e só avança a posição
-quando o sintetizador termina de falar a frase (assim, ao pausar, retoma da
-frase que estava no ar).
+say(texto, queue=False, on_done=None) é o Game.say. Coloca uma frase por vez
+na fila da fala e só encadeia a próxima quando o sintetizador termina a atual.
+A posição só avança nesse momento, então ao pausar ou cortar a fala se retoma
+do começo da frase que estava no ar.
 """
 from .texto import falavel
 
-ADIANTE = 2
+ADIANTE = 1
 
 
 class Leitura:

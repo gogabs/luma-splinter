@@ -131,7 +131,7 @@ class LeituraTest(unittest.TestCase):
 
     def test_le_ate_o_fim_anunciando_capitulos(self):
         self.l.tocar()
-        self.assertEqual(len(self.fala.fila), 2)          # adiantado
+        self.assertEqual(len(self.fala.fila), 1)          # uma frase por vez
         ditos = []
         while self.fala.fila:
             ditos.append(self.fala.terminar_uma())
