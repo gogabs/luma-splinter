@@ -13,6 +13,7 @@ import r36s_a11y as a11y
 from r36s_a11y import speech as _speech
 
 from leitor.epub import EpubError
+from leitor import exportar
 from leitor.estado import Estado
 from leitor.leitura import Leitura
 from leitor.livro import Livro, identificador
@@ -44,7 +45,7 @@ def _voz_com_velocidade():
 
 _speech._user_voice = _voz_com_velocidade
 
-ctx = {"livros": [], "livro": None, "leitura": None, "tempo": 0.0, "menu": None, "fim": False}
+ctx = {"livros": [], "livro": None, "leitura": None, "tempo": 0.0, "menu": None, "fim": False, "sel": None}
 
 
 def manter_acordado(ligado):
@@ -191,11 +192,20 @@ class MenuMarcadores(a11y.Menu):
     def handle_button(self, button, state, ms):
         if button == "x" and state == a11y.DOWN:
             estado.remover_marca(ctx["livro"].ident, self.index)
+            exportar_marcas()
             self.close()
             game.say("Marcador apagado.")
             game.after(1.2, menu_marcadores)
             return
         super().handle_button(button, state, ms)
+
+
+def resumo_da_marca(marca):
+    """Texto falado na lista: o começo da citação, com o capítulo."""
+    texto = " ".join((marca.get("texto") or "").split())
+    if len(texto) > 90:
+        texto = texto[:texto.rfind(" ", 40, 90) if texto.rfind(" ", 40, 90) > 0 else 90] + "..."
+    return "%s: %s" % (marca.get("nome", ""), texto) if texto else marca.get("nome", "")
 
 
 def menu_marcadores():
@@ -206,8 +216,8 @@ def menu_marcadores():
         game.say("Nenhum marcador neste livro. Durante a leitura, aperte X para marcar o ponto.")
         game.after(4.0, abrir_menu_do_livro)
         return
-    itens = ["Marcador %d, %s" % (i + 1, nome) for i, (_, nome) in enumerate(marcas)]
-    submenu("Marcadores", itens, lambda i, _t: ler_de(marcas[i][0]), classe=MenuMarcadores)
+    itens = ["Marcador %d, %s" % (i + 1, resumo_da_marca(mc)) for i, mc in enumerate(marcas)]
+    submenu("Marcadores", itens, lambda i, _t: ler_de(marcas[i]["pos"]), classe=MenuMarcadores)
 
 
 # --- leitura -------------------------------------------------------------------
@@ -276,14 +286,80 @@ def alternar():
         manter_acordado(True)
 
 
-def marcar():
-    livro, leitura = ctx["livro"], ctx["leitura"]
-    nome = "%s, %d%% do livro" % (livro.capitulos[leitura.pos[0]].titulo, livro.percentual(leitura.pos))
-    n = estado.adicionar_marca(livro.ident, leitura.pos, nome)
-    sons["marca"].play()
-    game.say("Marcador %d guardado." % n)
-    if leitura.tocando:
-        leitura.tocar(depois_do_que_esta_falando=True)
+def guardar_marca(ini, fim):
+    """Guarda o trecho de ini a fim (inclusive) e atualiza os arquivos de exportação. None se for grande demais."""
+    livro = ctx["livro"]
+    texto = livro.trecho(ini, fim)
+    if texto is None:
+        return None
+    antes, depois = livro.frase_anterior(ini), livro.proxima_frase(fim)
+    nome = "%s, %d%% do livro" % (livro.capitulos[ini[0]].titulo, livro.percentual(ini))
+    n = estado.adicionar_marca(livro.ident, ini, nome, fim=fim, texto=texto,
+                               antes=livro.frase(antes) if antes else "", depois=livro.frase(depois) if depois else "")
+    exportar_marcas()
+    return n
+
+
+def exportar_marcas():
+    """Reescreve o Markdown e o JSON (Web Annotation) deste livro em <saves>/exportar."""
+    livro = ctx["livro"]
+    marcas = estado.marcas(livro.ident)
+    pasta = os.path.join(game.save_dir, "exportar")
+    base = os.path.join(pasta, exportar.nome_de_arquivo(livro.titulo))
+    try:
+        os.makedirs(pasta, exist_ok=True)
+        if not marcas:
+            for ext in (".md", ".json"):
+                if os.path.exists(base + ext):
+                    os.remove(base + ext)
+            return
+        with open(base + ".md", "w", encoding="utf-8") as f:
+            f.write(exportar.markdown(livro.titulo, livro.autor, marcas))
+        with open(base + ".json", "w", encoding="utf-8") as f:
+            f.write(exportar.web_annotations(livro.ident, livro.titulo, livro.autor, marcas))
+    except OSError:
+        pass
+
+
+def X_apertado():
+    """X apertado: pode ser um marcador de uma frase ou o começo de um trecho (segurando e navegando)."""
+    leitura = ctx["leitura"]
+    retomar = leitura.tocando
+    if retomar:
+        leitura.pausar()
+        manter_acordado(False)
+    ctx["sel"] = {"ancora": leitura.pos, "retomar": retomar, "pontas": [(leitura.pos, leitura.pos)], "moveu": False}
+
+
+def selecao_andou(botao):
+    """Chamado depois de uma navegação com X apertado: anota a frase ou o parágrafo onde parou."""
+    sel, leitura = ctx["sel"], ctx["leitura"]
+    sel["moveu"] = True
+    c, p, s = leitura.pos
+    if botao in ("up", "down", "l1", "r1"):
+        sel["pontas"].append(((c, p, 0), (c, p, len(ctx["livro"].capitulos[c].paragrafos[p]) - 1)))
+    else:
+        sel["pontas"].append((leitura.pos, leitura.pos))
+
+
+def X_solto():
+    sel, ctx["sel"] = ctx["sel"], None
+    leitura = ctx["leitura"]
+    if sel is None:
+        return
+    ini = min(a for a, _ in sel["pontas"])
+    fim = max(b for _, b in sel["pontas"])
+    n = guardar_marca(ini, fim)
+    if n is None:
+        sons["borda"].play()
+        game.say("Trecho grande demais para um marcador. Escolha menos.")
+    else:
+        sons["marca"].play()
+        frases = ctx["livro"].contar(ini, fim)
+        game.say("Marcador %d guardado%s." % (n, ", trecho de %d frases" % frases if frases > 1 else ""))
+    if sel["retomar"]:
+        leitura.tocar(depois_do_que_esta_falando=True, ate=None)
+        manter_acordado(True)
 
 
 def mudar_velocidade(delta):
@@ -318,6 +394,9 @@ def inicio():
 @game.on_button
 def botao(b, st, ms):
     # Com um menu aberto, os botões vão para ele; aqui só chega a leitura em si.
+    if b == "x" and st == a11y.UP and ctx["sel"] is not None:
+        X_solto()
+        return
     if st != a11y.DOWN:
         return
     leitura, livro = ctx["leitura"], ctx["livro"]
@@ -348,7 +427,7 @@ def botao(b, st, ms):
     elif b == "l2":
         mudar_velocidade(-1)
     elif b == "x":
-        marcar()
+        X_apertado()
     elif b == "y":
         mover(pos, "", "frase")
     elif b == "select":
@@ -360,6 +439,8 @@ def botao(b, st, ms):
         abrir_menu_do_livro()
     elif a11y.is_back(b):
         voltar_aos_livros()
+    if ctx["sel"] is not None and b in ("left", "right", "up", "down", "l1", "r1"):
+        selecao_andou(b)
 
 
 @game.on_update

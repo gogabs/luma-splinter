@@ -29,10 +29,16 @@ class Estado:
         self.gravar()
 
     def marcas(self, ident):
-        return [(tuple(m["pos"]), m.get("nome", "")) for m in self._livro(ident)["marcas"]]
+        """Lista de dicts: pos e fim (tuplas), nome, texto, antes, depois."""
+        out = []
+        for m in self._livro(ident)["marcas"]:
+            pos = tuple(m["pos"])
+            out.append(dict(m, pos=pos, fim=tuple(m.get("fim") or pos)))
+        return out
 
-    def adicionar_marca(self, ident, pos, nome):
-        self._livro(ident)["marcas"].append({"pos": list(pos), "nome": nome})
+    def adicionar_marca(self, ident, pos, nome, fim=None, texto="", antes="", depois=""):
+        self._livro(ident)["marcas"].append({"pos": list(pos), "fim": list(fim or pos), "nome": nome,
+                                              "texto": texto, "antes": antes, "depois": depois})
         self.gravar()
         return len(self._livro(ident)["marcas"])
 

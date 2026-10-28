@@ -79,6 +79,31 @@ class Livro:
             resto -= tam
         return (c, len(self.capitulos[c].paragrafos) - 1, 0)
 
+    def trecho(self, ini, fim, limite=5000):
+        """Texto de ini até fim (inclusive), parágrafos separados por linha em branco; None se passar do limite."""
+        partes, pos, atual = [], ini, None
+        while pos is not None:
+            if atual is not None and pos[:2] != atual:
+                partes.append("\n\n")
+            elif atual is not None:
+                partes.append(" ")
+            atual = pos[:2]
+            partes.append(self.frase(pos))
+            if pos == fim:
+                break
+            pos = self.proxima_frase(pos)
+            if sum(len(p) for p in partes) > limite:
+                return None
+        return "".join(partes)
+
+    def contar(self, ini, fim):
+        """Quantas frases há de ini a fim, inclusive."""
+        n, pos = 1, ini
+        while pos is not None and pos != fim:
+            pos = self.proxima_frase(pos)
+            n += 1
+        return n
+
     def descricao(self, pos):
         c, p, _ = pos
         cap = self.capitulos[c]

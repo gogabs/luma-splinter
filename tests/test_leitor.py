@@ -7,6 +7,7 @@ import zipfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from leitor.estado import Estado
+from leitor import exportar
 from leitor.leitura import Leitura
 from leitor.livro import Capitulo, Livro
 from leitor.texto import extract, falavel, sentences
@@ -80,6 +81,13 @@ class LivroTest(unittest.TestCase):
         self.assertEqual(l.capitulo_anterior((0, 1, 0)), (0, 0, 0))
         self.assertIsNone(l.proximo_capitulo((1, 0, 0)))
 
+    def test_trecho(self):
+        l = self.livro()
+        self.assertEqual(l.trecho((0, 0, 1), (0, 1, 0)), "a2\n\nb1")
+        self.assertEqual(l.trecho((0, 0, 0), (0, 0, 1)), "a1 a2")
+        self.assertIsNone(l.trecho((0, 0, 0), (1, 0, 0), limite=3))
+        self.assertEqual(l.contar((0, 0, 1), (1, 0, 0)), 3)
+
     def test_percentual(self):
         l = self.livro()
         self.assertEqual(l.percentual((0, 0, 0)), 0)
@@ -98,8 +106,22 @@ class EstadoTest(unittest.TestCase):
             e.velocidade = 20
             e2 = Estado(d)
             self.assertEqual(e2.posicao("x"), (1, 2, 3))
-            self.assertEqual(e2.marcas("x"), [((0, 0, 1), "um")])
+            self.assertEqual(e2.marcas("x")[0]["pos"], (0, 0, 1))
+            self.assertEqual(e2.marcas("x")[0]["fim"], (0, 0, 1))
+            self.assertEqual(e2.marcas("x")[0]["nome"], "um")
             self.assertEqual(e2.velocidade, 20)
+
+
+class ExportarTest(unittest.TestCase):
+    def test_formatos(self):
+        marcas = [{"nome": "Cap 1, 10%", "texto": "Primeira.\n\nSegunda.", "antes": "Antes.", "depois": "Depois."}]
+        md = exportar.markdown("Livro", "Ana", marcas)
+        self.assertIn("# Livro", md)
+        self.assertIn("> Primeira.\n> Segunda.", md)
+        import json
+        doc = json.loads(exportar.web_annotations("abc", "Livro", "Ana", marcas))
+        sel = doc["items"][0]["target"]["selector"]
+        self.assertEqual((doc["total"], sel["type"], sel["suffix"]), (1, "TextQuoteSelector", "Depois."))
 
 
 class FalaFalsa:

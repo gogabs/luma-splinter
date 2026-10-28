@@ -39,7 +39,17 @@ class Fumaca(unittest.TestCase):
             press("r1")
             press("r2")
             self.assertIn("Velocidade mais 1", " ".join(ditos))
-            press("x")
+            press("x")                       # X apertado e solto: marca a frase
+            game._dispatch_button("x", a11y.UP, 0)
+            press("x")                       # segurar X e navegar: marca um trecho
+            press("left")
+            game._dispatch_button("x", a11y.UP, 0)
+            marcas = ns["estado"].marcas(ns["ctx"]["livro"].ident)
+            self.assertEqual(len(marcas), 2)
+            self.assertNotEqual(marcas[1]["pos"], marcas[1]["fim"])
+            self.assertTrue(marcas[1]["texto"])
+            self.assertTrue(os.path.exists(os.path.join(saves, "exportar", "Livro Teste.md")))
+            self.assertTrue(os.path.exists(os.path.join(saves, "exportar", "Livro Teste.json")))
             press("b")                       # pausa
             self.assertFalse(ns["ctx"]["leitura"].tocando)
             press("start")                   # menu do livro
