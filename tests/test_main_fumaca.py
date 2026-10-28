@@ -48,6 +48,11 @@ class Fumaca(unittest.TestCase):
             self.assertEqual(len(marcas), 2)
             self.assertNotEqual(marcas[1]["pos"], marcas[1]["fim"])
             self.assertTrue(marcas[1]["texto"])
+            press("x")                       # avançar e voltar encolhe o trecho de volta
+            press("left"); press("left"); press("right")
+            game._dispatch_button("x", a11y.UP, 0)
+            ultima = ns["estado"].marcas(ns["ctx"]["livro"].ident)[-1]
+            self.assertEqual(ns["ctx"]["livro"].contar(ultima["pos"], ultima["fim"]), 2)
             self.assertTrue(os.path.exists(os.path.join(saves, "exportar", "Livro Teste.md")))
             self.assertTrue(os.path.exists(os.path.join(saves, "exportar", "Livro Teste.json")))
             press("b")                       # pausa

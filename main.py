@@ -336,10 +336,12 @@ def selecao_andou(botao):
     sel, leitura = ctx["sel"], ctx["leitura"]
     sel["moveu"] = True
     c, p, s = leitura.pos
+    # só contam o ponto de partida e onde está agora: voltar encolhe o trecho
     if botao in ("up", "down", "l1", "r1"):
-        sel["pontas"].append(((c, p, 0), (c, p, len(ctx["livro"].capitulos[c].paragrafos[p]) - 1)))
+        agora = ((c, p, 0), (c, p, len(ctx["livro"].capitulos[c].paragrafos[p]) - 1))
     else:
-        sel["pontas"].append((leitura.pos, leitura.pos))
+        agora = (leitura.pos, leitura.pos)
+    sel["pontas"] = [sel["pontas"][0], agora]
 
 
 def X_solto():
